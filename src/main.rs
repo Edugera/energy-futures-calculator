@@ -1,49 +1,15 @@
-enum ContractStatus {
-    Active,
-    Settled,
-    Defaulted,
-}
+mod contract;
+mod risk;
+mod clearing;
 
-struct EnergyContract {
-    buyer: String,
-    volume_mwh: f64,
-    buy_price: f64,
-    sell_price: f64,
-    status: ContractStatus,
-    collateral_posted: f64,
-    margin_requirement_rate: f64,
-    token_id: u64,
-}
-
-fn calculate_notional(contract: &EnergyContract) -> f64 {
-    contract.volume_mwh * contract.buy_price
-}
-
-fn calculate_pnl(contract: &EnergyContract) -> f64 {
-    (contract.sell_price - contract.buy_price) * contract.volume_mwh
-}
-
-fn calculate_margin_requirement(contract: &EnergyContract) -> f64 {
-    calculate_notional(contract) * contract.margin_requirement_rate
-}
-
-fn calculate_shortfall(contract: &EnergyContract) -> f64 {
-    let margin = calculate_margin_requirement(contract);
-
-    if contract.collateral_posted >= margin {
-        0.0
-    } else {
-        margin - contract.collateral_posted
-    }
-}
-
-fn show_status(contract: &EnergyContract) {
-    match contract.status {
-        ContractStatus::Active => println!("Status: Active"),
-        ContractStatus::Settled => println!("Status: Settled"),
-        ContractStatus::Defaulted => println!("Status: Defaulted"),
-    }
-}
+use contract::{ContractStatus, EnergyContract};
+use clearing::show_status;
+use risk::{
+    calculate_margin_requirement,
+    calculate_notional,
+    calculate_pnl,
+    calculate_shortfall,
+};
 
 fn main() {
     let contracts = vec![
