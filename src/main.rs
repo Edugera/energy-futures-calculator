@@ -26,8 +26,14 @@ fn calculate_margin_requirement(contract: &EnergyContract) -> f64 {
     calculate_notional(contract) * contract.margin_requirement_rate
 }
 
-fn is_margin_sufficient(contract: &EnergyContract) -> bool {
-    contract.collateral_posted >= calculate_margin_requirement(contract)
+fn calculate_shortfall(contract: &EnergyContract) -> f64 {
+    let margin = calculate_margin_requirement(contract);
+
+    if contract.collateral_posted >= margin {
+        0.0
+    } else {
+        margin - contract.collateral_posted
+    }
 }
 
 fn show_status(contract: &EnergyContract) {
@@ -38,57 +44,81 @@ fn show_status(contract: &EnergyContract) {
     }
 }
 
-fn default_waterfall(contract: &EnergyContract) {
-    let required_margin = calculate_margin_requirement(contract);
-
-    if contract.collateral_posted >= required_margin {
-        println!("Default Waterfall: no default. Collateral is sufficient.");
-    } else {
-        let shortfall = required_margin - contract.collateral_posted;
-
-        println!("Default Waterfall: default risk detected.");
-        println!("Margin Shortfall: R$ {}", shortfall);
-        println!("Action 1: use posted collateral.");
-        println!("Action 2: request additional margin.");
-        println!("Action 3: trigger clearing pool protection.");
-    }
-}
-
 fn main() {
-    let contract = EnergyContract {
-        buyer: String::from("Industrial Client A"),
-        volume_mwh: 100.0,
-        buy_price: 220.0,
-        sell_price: 245.0,
-        status: ContractStatus::Active,
-        collateral_posted: 800.0,
-        margin_requirement_rate: 0.05,
-    };
+    let contracts = vec![
+        EnergyContract {
+            buyer: String::from("Industrial Client A"),
+            volume_mwh: 100.0,
+            buy_price: 220.0,
+            sell_price: 245.0,
+            status: ContractStatus::Active,
+            collateral_posted: 800.0,
+            margin_requirement_rate: 0.05,
+        },
+        EnergyContract {
+            buyer: String::from("Generator B"),
+            volume_mwh: 150.0,
+            buy_price: 210.0,
+            sell_price: 230.0,
+            status: ContractStatus::Settled,
+            collateral_posted: 2000.0,
+            margin_requirement_rate: 0.05,
+        },
+        EnergyContract {
+            buyer: String::from("Retailer C"),
+            volume_mwh: 80.0,
+            buy_price: 260.0,
+            sell_price: 240.0,
+            status: ContractStatus::Defaulted,
+            collateral_posted: 300.0,
+            margin_requirement_rate: 0.05,
+        },
+    ];
 
-    let notional = calculate_notional(&contract);
-    let pnl = calculate_pnl(&contract);
-    let margin_requirement = calculate_margin_requirement(&contract);
+    let mut total_notional = 0.0;
+    let mut total_pnl = 0.0;
+    let mut total_margin = 0.0;
+    let mut total_collateral = 0.0;
+    let mut total_shortfall = 0.0;
 
-    println!("Energy Futures Clearing Prototype");
-    println!("---------------------------------");
+    println!("Energy Futures Clearing Pool");
+    println!("----------------------------");
 
-    show_status(&contract);
+    for contract in contracts.iter() {
+        println!("");
+        println!("Buyer: {}", contract.buyer);
+        show_status(contract);
 
-    println!("Buyer: {}", contract.buyer);
-    println!("Volume: {} MWh", contract.volume_mwh);
-    println!("Buy Price: R$ {}", contract.buy_price);
-    println!("Sell Price: R$ {}", contract.sell_price);
-    println!("Notional: R$ {}", notional);
-    println!("PnL: R$ {}", pnl);
+        let notional = calculate_notional(contract);
+        let pnl = calculate_pnl(contract);
+        let margin = calculate_margin_requirement(contract);
+        let shortfall = calculate_shortfall(contract);
 
-    println!("Collateral Posted: R$ {}", contract.collateral_posted);
-    println!("Margin Requirement: R$ {}", margin_requirement);
+        println!("Notional: R$ {}", notional);
+        println!("PnL: R$ {}", pnl);
+        println!("Margin Requirement: R$ {}", margin);
+        println!("Collateral Posted: R$ {}", contract.collateral_posted);
+        println!("Shortfall: R$ {}", shortfall);
 
-    if is_margin_sufficient(&contract) {
-        println!("Margin Check: sufficient collateral.");
-    } else {
-        println!("Margin Check: insufficient collateral.");
+        total_notional += notional;
+        total_pnl += pnl;
+        total_margin += margin;
+        total_collateral += contract.collateral_posted;
+        total_shortfall += shortfall;
     }
 
-    default_waterfall(&contract);
+    println!("");
+    println!("Pool Summary");
+    println!("------------");
+    println!("Total Notional: R$ {}", total_notional);
+    println!("Total PnL: R$ {}", total_pnl);
+    println!("Total Margin Requirement: R$ {}", total_margin);
+    println!("Total Collateral Posted: R$ {}", total_collateral);
+    println!("Total Shortfall: R$ {}", total_shortfall);
+
+    if total_shortfall > 0.0 {
+        println!("Pool Risk Status: clearing pool protection required.");
+    } else {
+        println!("Pool Risk Status: fully collateralized.");
+    }
 }
