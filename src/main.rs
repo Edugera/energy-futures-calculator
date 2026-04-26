@@ -1,60 +1,66 @@
-fn calculate_notional(volume_mwh: f64, price_mwh: f64) -> f64 {
-    volume_mwh * price_mwh
-}
-
-fn calculate_pnl(
+struct EnergyContract {
+    buyer: String,
+    volume_mwh: f64,
     buy_price: f64,
     sell_price: f64,
-    volume_mwh: f64
-) -> f64 {
-
-    (sell_price - buy_price) * volume_mwh
 }
 
-fn calculate_risk_exposure(notional: f64, risk_percent: f64) -> f64 {
-    notional * risk_percent
+fn calculate_notional(contract: &EnergyContract) -> f64 {
+    contract.volume_mwh * contract.buy_price
+}
+
+fn calculate_pnl(contract: &EnergyContract) -> f64 {
+    (contract.sell_price - contract.buy_price)
+        * contract.volume_mwh
+}
+
+fn calculate_risk(contract: &EnergyContract) -> f64 {
+    calculate_notional(contract) * 0.05
 }
 
 fn main() {
 
-    let volume = 100.0;
+    let contract = EnergyContract {
+        buyer: String::from("Industrial Client A"),
+        volume_mwh:100.0,
+        buy_price:220.0,
+        sell_price:245.0,
+    };
 
-    let buy_price = 220.0;
-    let sell_price = 245.0;
+    let notional=
+        calculate_notional(&contract);
 
-    let risk_percent = 0.05;
+    let pnl=
+        calculate_pnl(&contract);
 
-    let notional =
-        calculate_notional(volume,buy_price);
+    let risk=
+        calculate_risk(&contract);
 
-    let pnl =
-        calculate_pnl(
-            buy_price,
-            sell_price,
-            volume
-        );
-    
-    let risk_exposure = calculate_risk_exposure(notional, risk_percent);
-    
-    println!("Energy Futures Calculator");
-    println!("-------------------------");
+    println!("Energy Futures Contract");
+    println!("----------------------");
 
-    println!("Volume: {} MWh",volume);
-    println!("Buy Price: R$ {}",buy_price);
-    println!("Sell Price: R$ {}",sell_price);
+    println!("Buyer: {}",contract.buyer);
 
-    println!("Contract Notional: R$ {}",notional);
+    println!(
+      "Volume: {} MWh",
+      contract.volume_mwh
+    );
+
+    println!(
+      "Buy Price: R$ {}",
+      contract.buy_price
+    );
+
+    println!(
+      "Sell Price: R$ {}",
+      contract.sell_price
+    );
+
+    println!("Notional: R$ {}",notional);
+
     println!("PnL: R$ {}",pnl);
 
-    println!("Risk Expposure 5%: R$ {}", risk_exposure);
-
-    if pnl > 0.0 {
-        println!("Trade Result: Profitable trade");
-    } else if pnl < 0.0 {
-        println!("Trade Result: Loss trade");
-    } else {
-        println!("Trade Result: Break-even");
-    }
+    println!("Risk Exposure: R$ {}",risk);
 
 }
 
