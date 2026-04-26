@@ -12,6 +12,7 @@ struct EnergyContract {
     status: ContractStatus,
     collateral_posted: f64,
     margin_requirement_rate: f64,
+    token_id: u64,
 }
 
 fn calculate_notional(contract: &EnergyContract) -> f64 {
@@ -47,6 +48,7 @@ fn show_status(contract: &EnergyContract) {
 fn main() {
     let contracts = vec![
         EnergyContract {
+            token_id: 1001,
             buyer: String::from("Industrial Client A"),
             volume_mwh: 100.0,
             buy_price: 220.0,
@@ -56,6 +58,7 @@ fn main() {
             margin_requirement_rate: 0.05,
         },
         EnergyContract {
+            token_id: 1002,
             buyer: String::from("Generator B"),
             volume_mwh: 150.0,
             buy_price: 210.0,
@@ -65,6 +68,7 @@ fn main() {
             margin_requirement_rate: 0.05,
         },
         EnergyContract {
+            token_id: 1003,
             buyer: String::from("Retailer C"),
             volume_mwh: 80.0,
             buy_price: 260.0,
@@ -81,12 +85,15 @@ fn main() {
     let mut total_collateral = 0.0;
     let mut total_shortfall = 0.0;
 
+    let guarantee_fund = 1500.0;
+
     println!("Energy Futures Clearing Pool");
     println!("----------------------------");
 
     for contract in contracts.iter() {
         println!("");
         println!("Buyer: {}", contract.buyer);
+        println!("Token ID: {}", contract.token_id);
         show_status(contract);
 
         let notional = calculate_notional(contract);
@@ -120,5 +127,11 @@ fn main() {
         println!("Pool Risk Status: clearing pool protection required.");
     } else {
         println!("Pool Risk Status: fully collateralized.");
+    }
+
+    if guarantee_fund >= total_shortfall {
+        println!("Guarantee Fund absorbs shortfall.");
+    } else {
+        println!("Residual systemic risk remains.");
     }
 }
